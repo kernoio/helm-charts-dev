@@ -160,6 +160,8 @@ spec:
       - args:
         - --config-dir
         - /etc/vector/kerno
+        - -t
+        - "1"
         env:
         - name: KERNO_JWT_TOKEN
           valueFrom:
@@ -176,7 +178,7 @@ spec:
         name: vector-egress
         resources:
           limits:
-            memory: 128Mi
+            memory: 256Mi
           requests:
             cpu: 100m
             memory: 128Mi
@@ -243,6 +245,8 @@ spec:
         - /etc/vector/kerno/console
         - --config-dir
         - /var/run/secrets/kubernetes.io/serviceaccount
+        - -t
+        - "2"
         env:
         - name: VECTOR_LOG
           value: info
@@ -274,7 +278,7 @@ spec:
         name: vector
         resources:
           limits:
-            memory: 384Mi
+            memory: 512Mi
           requests:
             cpu: 100m
             memory: 64Mi
