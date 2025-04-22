@@ -136,11 +136,6 @@ spec:
             secretKeyRef:
               key: INSTALLATION_KEY
               name: installation-config
-        - name: INSTALLATION_ID
-          valueFrom:
-            secretKeyRef:
-              key: INSTALLATION_ID
-              name: installation-config
         - name: K8S_LOOKUPS_ENABLED
           value: "true"
         - name: APP_TARGET_KUBE_API
@@ -150,7 +145,7 @@ spec:
         - name: K8S_BRIDGE_HTTP_URL
           value: https://ingestion.dev.kerno.io:443/k8s-bridge
         - name: SAMPLES_BUCKET
-          value: kerno-samples-installation-id-replace
+          value: kerno-samples-
         - name: CLOUD
           value: KUBERNETES
         - name: CONNECT_TO_K8S_BRIDGE
@@ -162,7 +157,7 @@ spec:
           value: /shared
         - name: POSTGRES_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/nanobe@sha256:65068a77c1af967abb24a2ae6e97f36d62620a0dcf36e8282f2678c706a09744
+        image: public.ecr.aws/fyck.io/nanobe@sha256:bcc442968ba2d226ecb6c83389efd75c5eb74ac771994a8af66f427b14119d1c
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -251,7 +246,6 @@ metadata:
 ---
 apiVersion: v1
 data:
-  INSTALLATION_ID: aW5zdGFsbGF0aW9uLWlkLXJlcGxhY2U=
   INSTALLATION_KEY: {{ .Values.apiKey }}
   TOKEN: dG9rZW4tcmVwbGFjZQ==
 kind: Secret
@@ -303,7 +297,7 @@ spec:
         - name: VECTOR_LOG
           value: info
         - name: BUCKET_NAME
-          value: kerno-samples-installation-id-replace
+          value: kerno-samples-
         - name: VECTOR_SELF_NODE_NAME
           valueFrom:
             fieldRef:
