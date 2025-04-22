@@ -1,3 +1,35 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kerno:read-only-role-binding
+  namespace: kerno
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kerno:read-only-role
+subjects:
+- kind: ServiceAccount
+  name: kerno-sa
+  namespace: kerno
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nanobe
+  name: nanobe
+  namespace: kerno
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app.kubernetes.io/instance: nanobe
+    app.kubernetes.io/name: nanobe
+  type: ClusterIP
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -39,7 +71,7 @@ spec:
           value: "80"
         - name: NANOBE_PATH
           value: ingestor/v2
-        image: public.ecr.aws/fyck.io/preon:2025.4.11
+        image: public.ecr.aws/fyck.io/preon:2025.4.21
         imagePullPolicy: Always
         name: main
         resources:
@@ -130,7 +162,7 @@ spec:
           value: /shared
         - name: POSTGRES_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/nanobe@sha256:eda02dba01d0c561eb167d6c87b7427e4f65eeb009b38bc7d964f76a94f88749
+        image: public.ecr.aws/fyck.io/nanobe@sha256:a37755d22015c5789d2e9603256d65d77ad7c625dfc52d60d27d047f62ff4609
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -196,6 +228,26 @@ spec:
         name: vector-offload-volume
       - emptyDir: {}
         name: vector-data-volume
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kerno:read-only-role
+  namespace: kerno
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - get
+  - watch
+  - list
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kerno
 ---
 apiVersion: v1
 data:
@@ -324,3 +376,9 @@ spec:
           path: /sys
           type: ""
         name: sysfs
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kerno-sa
+  namespace: kerno
