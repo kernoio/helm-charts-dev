@@ -213,40 +213,12 @@ spec:
       - command:
         - /bin/sh
         - -c
-        - |-
-          echo "Retrieving API token from Kerno"
-
-          API_KEY="4aie8Ku0rPCdn57tmYDwsI6Z8KuIs-qZsuGYkfCssb_siIvwra6x7YyL8Ja9tvCRv6zwp6-e8JegpPCslYflmY_wnYS08KK9nvClnLDkooHorYXwn42U8JKDs_CfprPwo6C_8J-lg_CTi53woLmS6J2F56WxzbfipZjwoomG8KSZruuWvQ=="
-
-          response=$(curl -s -w "%{http_code}" -H "x-kerno-api-key: $API_KEY" https://ingestion.dev.kerno.io:443/k8s-bridge/installation)
-
-          http_status=$(echo "$response" | rev | cut -c 1-3 | rev)
-
-          if [ "$http_status" -ne 200 ]; then
-              echo "An error occurred retrieving the API token, exiting"
-              exit 1
-          fi
-
-          mkdir secrets
-
-          body=$(echo "$response" | head -c -4)
-
-          echo "$body" > secrets/config.json
-
-          echo -e "Token saved successfully"
-          echo "Retrieving API token from Kerno"
-          response=$(curl -s -w "%{http_code}" -H "x-kerno-api-key: $API_KEY" https://ingestion.dev.kerno.io:443/k8s-bridge/installation)
-          http_status=$(echo "$response" | rev | cut -c 1-3 | rev)
-
-          if [ "$http_status" -ne 200 ]; then
-              echo "An error occurred retrieving the API token, exiting"
-              exit 1
-          fi
-
-          mkdir /shared/secrets
-          body=$(echo "$response" | head -c -4)
-          cat body > /shared/secrets/config.json
-          echo -e "Token saved successfully"
+        - 'echo "Retrieving API token from Kerno"; response=$(curl -s -w "%{http_code}"
+          -H "x-kerno-api-key: $API_KEY" https://ingestion.dev.kerno.io:443/k8s-bridge/installation);
+          http_status=$(echo "$response" | rev | cut -c 1-3 | rev); if [ "$http_status"
+          -ne 200 ]; then echo "An error occurred retrieving the API token, exiting";
+          exit 1; fi; mkdir /shared/secrets; echo "$response" | head -c -4 > /shared/secrets/config.json;
+          echo -e "Token saved successfully"'
         env:
         - name: API_KEY
           valueFrom:
