@@ -1,9 +1,9 @@
 apiVersion: v2
-name: kerno-agent
-description: Kerno's Agent chart
+name: agent
+description: Kerno's monitoring Agent
 
 type: application
 
-version: 2025.04.2208
+version: 2025.04.2209
 
-appVersion: "1.16.0"
+appVersion: "0.1.0"

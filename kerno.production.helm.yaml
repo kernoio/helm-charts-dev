@@ -240,13 +240,8 @@ rules:
   - list
 ---
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: kerno
----
-apiVersion: v1
 data:
-  INSTALLATION_KEY: {{ .Values.apiKey }}
+  INSTALLATION_KEY: {{ .Values.apiKey | b64enc | quote }}
   TOKEN: dG9rZW4tcmVwbGFjZQ==
 kind: Secret
 metadata:
