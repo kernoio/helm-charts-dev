@@ -1,9 +1,18 @@
-# Installing the Kerno agent with the helm chart
+# Kerno Agent Helm Chart (dev)
 
-Add the repository to your local helm:
+## Add the repository to your local helm:
 
-`helm repo add kerno-dev https://kernoio.github.io/helm-charts-dev`
+```bash
 
-Fill in the api key in `values.yaml`.
+helm repo add kerno-dev https://kernoio.github.io/helm-charts-dev
 
+```
 
+## Install the Chart
+
+```bash
+
+helm install kerno-agent kerno-dev/agent \
+  --create-namespace \
+  --set api-key="<KERNO_API_KEY>"
+```
