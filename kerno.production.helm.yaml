@@ -121,6 +121,8 @@ spec:
       - args:
         - --config-dir
         - /etc/vector/kerno
+        - --config-dir
+        - /etc/vector/kerno/cloud
         - -t
         - "1"
         env:
@@ -130,7 +132,7 @@ spec:
           value: https://ingestion.kerno.io:443/k8s-bridge/vector
         - name: KERNO_CLOUD_INGESTION_URL
           value: https://ingestion.kerno.io:443
-        image: public.ecr.aws/fyck.io/vector-egress@sha256:14079e3d316196965028762f81cd39eda6a0fa1fe7194c28631bd94336b3e05f
+        image: public.ecr.aws/fyck.io/vector-egress@sha256:064c30359aca9244ff7389a45e3c58efabd84187fd92e421e427379dff7348f7
         name: vector-egress
         resources:
           limits:
