@@ -132,7 +132,7 @@ spec:
           value: https://ingestion.dev.kerno.io:443/k8s-bridge/vector
         - name: KERNO_CLOUD_INGESTION_URL
           value: https://ingestion.dev.kerno.io:443
-        image: public.ecr.aws/fyck.io/vector-egress@sha256:064c30359aca9244ff7389a45e3c58efabd84187fd92e421e427379dff7348f7
+        image: public.ecr.aws/fyck.io/vector-egress@sha256:a70afe4640d42891e567c1ac8aefbac6b3cf6d6bea5067fa04d1e73c8ac1ab16
         name: vector-egress
         resources:
           limits:
@@ -266,7 +266,7 @@ spec:
           value: /host/sys
         - name: NANOBE_STACK_TRACE_AGGREGATION_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/vector-agent@sha256:5fede6b27cce7a4203f26eb942a00188871742d312c1f961780745bf1f641e6b
+        image: public.ecr.aws/fyck.io/vector-agent@sha256:e53553a0a718a57fe4e1b21191e9758ae1e04e2a98a21302540c79ff0df25cf9
         imagePullPolicy: Always
         name: vector
         resources:
