@@ -4,6 +4,6 @@ description: Kerno's monitoring Agent
 
 type: application
 
-version: 2025.05.0600
+version: 2025.05.0601
 
 appVersion: "0.1.0"
