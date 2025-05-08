@@ -3,6 +3,16 @@ entries:
   agent:
   - apiVersion: v2
     appVersion: 0.1.0
+    created: "2025-05-08T12:49:26.277210535Z"
+    description: Kerno's monitoring Agent
+    digest: 5f697f2470f60176f9a58ae552b459870da072866cc935a633202dd862c662f1
+    name: agent
+    type: application
+    urls:
+    - https://github.com/kernoio/helm-charts-dev/releases/download/agent-2025.05.0812/agent-2025.05.0812.tgz
+    version: 2025.05.0812
+  - apiVersion: v2
+    appVersion: 0.1.0
     created: "2025-05-08T12:26:54.370624696Z"
     description: Kerno's monitoring Agent
     digest: bf771f416460a054ea6c35d849f34b2f134b7d29d96ec8ba54890c0de3feb730
@@ -671,4 +681,4 @@ entries:
     urls:
     - https://github.com/kernoio/helm-charts-dev/releases/download/agent-2025.04.2300/agent-2025.04.2300.tgz
     version: 2025.04.2300
-generated: "2025-05-08T12:26:54.370939977Z"
+generated: "2025-05-08T12:49:26.277539932Z"
