@@ -215,7 +215,7 @@ spec:
           value: "80"
         - name: NANOBE_PATH
           value: ingestor/v2
-        image: public.ecr.aws/fyck.io/preon:2025.4.22
+        image: public.ecr.aws/fyck.io/preon:2025.5.8
         imagePullPolicy: Always
         name: main
         resources:
