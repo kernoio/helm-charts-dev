@@ -82,7 +82,7 @@ spec:
           value: /shared
         - name: POSTGRES_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/nanobe@sha256:32e1fd368b8eb8dd9bd98549d1c9388d6ebb4013a4a55fa6b588d24d1fbd66ae
+        image: public.ecr.aws/fyck.io/nanobe@sha256:927a292a0ed414637b726d5cdd9fa910d83e41a7957559cca96970dd7bb6d535
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
