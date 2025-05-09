@@ -82,7 +82,7 @@ spec:
           value: /shared
         - name: POSTGRES_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/nanobe@sha256:6f2a79e7608bd93c4d96c8273a8cf5b81f2f369a25a8ba1d352c121143841295
+        image: public.ecr.aws/fyck.io/nanobe@sha256:32e1fd368b8eb8dd9bd98549d1c9388d6ebb4013a4a55fa6b588d24d1fbd66ae
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -215,7 +215,7 @@ spec:
           value: "80"
         - name: NANOBE_PATH
           value: ingestor/v2
-        image: public.ecr.aws/fyck.io/preon:2025.5.8
+        image: public.ecr.aws/fyck.io/preon:2025.5.9
         imagePullPolicy: Always
         name: main
         resources:
