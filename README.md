@@ -22,7 +22,7 @@ helm install kerno-agent kerno-dev/agent \
 
 ### AWS S3
 
-#### Creating the resources
+#### Creating the bucket and necessary roles to access it from an EKS cluster.
 
 To create and maintain an object storage for logs and stack traces, the following needs to be done:
 - an S3 bucket is created
@@ -32,74 +32,85 @@ To create and maintain an object storage for logs and stack traces, the followin
  
 Here is a more detailed set of instructions:
 
-Have your cluster's oidc url handy.
-
 1. Create an S3 bucket and make a note of the name
-2. Create a role with the following trust relationship, replacing `account-id` and `oidc-provider-url` (Note removing the prefix for the `Federated` key):
-```
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Federated": "arn:aws:iam::<account-id>:oidc-provider/<oidc-provider-url-without-https://>"
-            },
-            "Action": "sts:AssumeRoleWithWebIdentity",
-            "Condition": {
-                "StringLike": {
-                    "<oidc-provider-url>:sub": "system:serviceaccount:kerno:*"
+2. With your cluster's oidc url at hand, 
+   - create a role with `Web identity` Trusted Entity type 
+and choose your oidc provider url when choosing an `Identiy Provider`.
+   - For the audience, choose `sts.amazonaws.com`. 
+   - Add a condition with:
+     - _Key_ `<oidc-url>:sub`, this option should be available in the dropdown. 
+     - _Condition_ `StringLike` and
+     - _Value_ `system:serviceaccount:kerno:*`
+   - On the next page, do not choose any policy, a custom one for access to the Kerno bucket will be created in the next step. Click _Next_.
+   - Fill in a role name, and description if desired. 
+    
+    The `Turst policy` json should look like the following:
+    ```
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "Federated": "arn:aws:iam::<account-id>:oidc-provider/<oidc-provider-url-without-https://>"
                 },
-                "StringEquals": {
-                    "<oidc-provider-url>:aud": "sts.amazonaws.com"
+                "Action": "sts:AssumeRoleWithWebIdentity",
+                "Condition": {
+                    "StringLike": {
+                        "<oidc-provider-url>:sub": "system:serviceaccount:kerno:*"
+                    },
+                    "StringEquals": {
+                        "<oidc-provider-url>:aud": "sts.amazonaws.com"
+                    }
                 }
             }
-        }
-    ]
-}
- ```
+        ]
+    }
+    ```
 
-This allows the kerno service account to assume a role with web identity in the AWS account.
+    This allows the kerno service account to assume a role with web identity in the AWS account.
 
-3. Create the role policy with the id of the role from the previous step, replacing `bucket-name` with the bucket name created in step 1.:
-```
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:*"
-            ],
-            "Resource": [
-                "arn:aws:s3:::<bucket-name>",
-                "arn:aws:s3:::<bucket-name>/*"
-            ]
-        }
-    ]
-}
-```
 
-4. Finally, create a bucket policy allowing all actions on the bucket, replacing `role-arn` with the arn of the role created in step 2. and `bucket-name` with the name of the bucket created in step 1.:
+3. Navigate to the created role, and click _Add permissions_ and _Create inline policy_. Use _JSON_ and paste the following, replacing `bucket-name` with the bucket name created in step 1.:
+    ```
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:*"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::<bucket-name>",
+                    "arn:aws:s3:::<bucket-name>/*"
+                ]
+            }
+        ]
+    }
+    ```
+   Name the policy and create it.
+ 
 
-```
-{
-   "Version": "2012-10-17",
-   "Statement": [
-       {
-           "Effect": "Allow",
-           "Principal": {
-               "AWS": "<role-arn>"
-           },
-           "Action": "s3:*",
-           "Resource": [
-               "arn:aws:s3:::<bucket-name>",
-               "arn:aws:s3:::<bucket-name>/*"
-           ]
-       }
-   ]
-}
-```
+4. Finally, navigate to the bucket created for Kerno data. Click on _Permissions_ and   _Edit_ the _Bucket Policy_ with the following JSON, where `role-arn` is the role created and `bucket-name` is the name of the bucket:
+    ```
+    {
+       "Version": "2012-10-17",
+       "Statement": [
+           {
+               "Effect": "Allow",
+               "Principal": {
+                   "AWS": "<role-arn>"
+               },
+               "Action": "s3:*",
+               "Resource": [
+                   "arn:aws:s3:::<bucket-name>",
+                   "arn:aws:s3:::<bucket-name>/*"
+               ]
+           }
+       ]
+    }
+    ```
 
 #### Filling in `values.yaml`
 
