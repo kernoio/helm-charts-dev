@@ -35,7 +35,7 @@ Here is a more detailed set of instructions:
 1. Create an S3 bucket and make a note of the name
 2. With your cluster's oidc url at hand, 
    - create a role with `Web identity` Trusted Entity type 
-and choose your oidc provider url when choosing an `Identiy Provider`.
+and choose your oidc provider url when choosing an `Identity Provider`.
    - For the audience, choose `sts.amazonaws.com`. 
    - Add a condition with:
      - _Key_ `<oidc-url>:sub`, this option should be available in the dropdown. 
@@ -44,7 +44,7 @@ and choose your oidc provider url when choosing an `Identiy Provider`.
    - On the next page, do not choose any policy, a custom one for access to the Kerno bucket will be created in the next step. Click _Next_.
    - Fill in a role name, and description if desired. 
     
-    The `Turst policy` json should look like the following:
+    The `Trust policy` json should look like the following:
     ```
     {
         "Version": "2012-10-17",
@@ -68,7 +68,7 @@ and choose your oidc provider url when choosing an `Identiy Provider`.
     }
     ```
 
-    This allows the kerno service account to assume a role with web identity in the AWS account.
+    This allows the Kerno service account to assume a role with web identity in the AWS account.
 
 
 3. Navigate to the created role, and click _Add permissions_ and _Create inline policy_. Use _JSON_ and paste the following, replacing `bucket-name` with the bucket name created in step 1.:
