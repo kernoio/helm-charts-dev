@@ -26,6 +26,10 @@ kind: ServiceAccount
 metadata:
   name: kerno-sa
   namespace: kerno
+  {{- with .Values.serviceAccountAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -79,9 +83,9 @@ spec:
         - name: K8S_BRIDGE_HTTP_URL
           value: https://ingestion.dev.kerno.io:443/k8s-bridge
         - name: SAMPLES_BUCKET
-          value: kerno-samples-
+          value: {{ .Values.bucketName | default "kerno-samples-" }}
         - name: CLOUD
-          value: KUBERNETES
+          value: {{ .Values.cloud | default "KUBERNETES" | upper }}
         - name: CONNECT_TO_K8S_BRIDGE
           value: "true"
         - name: JAVA_TOOL_OPTIONS
@@ -188,6 +192,23 @@ kind: Service
 metadata:
   labels:
     app: nanobe
+  name: vector-egress
+  namespace: kerno
+spec:
+  ports:
+  - name: http
+    port: 6000
+    protocol: TCP
+  selector:
+    app.kubernetes.io/instance: nanobe
+    app.kubernetes.io/name: nanobe
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nanobe
   name: nanobe
   namespace: kerno
 spec:
@@ -235,7 +256,7 @@ spec:
       containers:
       - args:
         - --config-dir
-        - /etc/vector/kerno/console
+        - "/etc/vector/kerno/{{ .Values.cloud | default "console" | lower }}"
         - --config-dir
         - /var/run/secrets/kubernetes.io/serviceaccount
         - -t
@@ -244,7 +265,7 @@ spec:
         - name: VECTOR_LOG
           value: info
         - name: BUCKET_NAME
-          value: kerno-samples-
+          value: {{ .Values.bucketName | default "kerno-samples-" }}
         - name: VECTOR_SELF_NODE_NAME
           valueFrom:
             fieldRef:

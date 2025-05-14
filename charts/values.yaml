@@ -1,2 +1,14 @@
-# Replace with an actual API key
+# Replace with Kerno API key (required)
 apiKey: kerno-api-key
+
+# Optional: cloud provider ("aws", "gcp", etc) for storage
+cloud:
+
+# Optional: bucket name if using self-managed storage
+bucketName:
+
+# Optional: annotations to add to the ServiceAccount if using self-managed storage
+# Example for AWS:
+# serviceAccountAnnotations:
+#   eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/my-role
+serviceAccountAnnotations:
