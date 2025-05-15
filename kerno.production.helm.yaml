@@ -1,0 +1,418 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nanobe
+  name: nanobe
+  namespace: kerno
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app.kubernetes.io/instance: nanobe
+    app.kubernetes.io/name: nanobe
+  type: ClusterIP
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kerno:read-only-role-binding
+  namespace: kerno
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kerno:read-only-role
+subjects:
+- kind: ServiceAccount
+  name: kerno-sa
+  namespace: kerno
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kerno:read-only-role
+  namespace: kerno
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - get
+  - watch
+  - list
+---
+apiVersion: v1
+data:
+  INSTALLATION_KEY: {{ .Values.apiKey | b64enc | quote }}
+kind: Secret
+metadata:
+  name: installation-config
+  namespace: kerno
+type: Opaque
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app.kubernetes.io/app: nanobe
+    app.kubernetes.io/component: preon
+    app.kubernetes.io/part-of: nanobe
+  name: preon
+  namespace: kerno
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/app: nanobe
+      app.kubernetes.io/component: preon
+      app.kubernetes.io/part-of: nanobe
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/app: nanobe
+        app.kubernetes.io/component: preon
+        app.kubernetes.io/part-of: nanobe
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: eks.amazonaws.com/compute-type
+                operator: NotIn
+                values:
+                - fargate
+      containers:
+      - env:
+        - name: LOG_LEVEL
+          value: info
+        - name: NANOBE_HOST
+          value: nanobe
+        - name: NANOBE_PORT
+          value: "80"
+        - name: NANOBE_PATH
+          value: ingestor/v2
+        image: public.ecr.aws/fyck.io/preon:2025.5.9
+        imagePullPolicy: Always
+        name: main
+        resources:
+          limits:
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        securityContext:
+          capabilities:
+            add:
+            - SYS_ADMIN
+          privileged: true
+        volumeMounts:
+        - mountPath: /host
+          name: host-root
+          readOnly: true
+        - mountPath: /sys
+          name: host-sys
+          readOnly: true
+      hostPID: true
+      nodeSelector:
+        kubernetes.io/os: linux
+      terminationGracePeriodSeconds: 10
+      tolerations:
+      - operator: Exists
+      volumes:
+      - hostPath:
+          path: /
+          type: Directory
+        name: host-root
+      - hostPath:
+          path: /sys
+          type: Directory
+        name: host-sys
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: nanobe
+    app.kubernetes.io/managed-by: Kerno
+    app.kubernetes.io/name: nanobe
+  name: nanobe
+  namespace: kerno
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: nanobe
+      app.kubernetes.io/name: nanobe
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: nanobe
+        app.kubernetes.io/managed-by: Kerno
+        app.kubernetes.io/name: nanobe
+    spec:
+      containers:
+      - env:
+        - name: INSTALLATION_KEY
+          valueFrom:
+            secretKeyRef:
+              key: INSTALLATION_KEY
+              name: installation-config
+        - name: K8S_LOOKUPS_ENABLED
+          value: "true"
+        - name: APP_TARGET_KUBE_API
+          value: https://kubernetes.default
+        - name: K8S_BRIDGE_URL
+          value: wss://ingestion.dev.kerno.io:443/k8s-bridge/ws
+        - name: K8S_BRIDGE_HTTP_URL
+          value: https://ingestion.dev.kerno.io:443/k8s-bridge
+        - name: SAMPLES_BUCKET
+          value: {{ .Values.bucketName | default "kerno-samples-" }}
+        - name: CLOUD
+          value: {{ .Values.cloud | default "KUBERNETES" | upper }}
+        - name: CONNECT_TO_K8S_BRIDGE
+          value: "true"
+        - name: JAVA_TOOL_OPTIONS
+          value: -XX:InitialRAMPercentage=50 -XX:MaxRAMPercentage=50 -XX:CompressedClassSpaceSize=256m
+            -XX:+UseShenandoahGC -DLOG_LEVEL=INFO
+        - name: VECTOR_EGRESS_SHARED_PATH
+          value: /shared
+        - name: POSTGRES_ENABLED
+          value: "true"
+        image: public.ecr.aws/fyck.io/nanobe:latest
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: main
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          limits:
+            ephemeral-storage: 4Gi
+            memory: 2Gi
+          requests:
+            cpu: 200m
+            ephemeral-storage: 2Gi
+            memory: 2Gi
+        volumeMounts:
+        - mountPath: /shared
+          name: vector-offload-volume
+          readOnly: true
+      - args:
+        - --config-dir
+        - /etc/vector/kerno
+        - --config-dir
+        - /etc/vector/kerno/cloud
+        - -t
+        - "1"
+        env:
+        - name: VECTOR_EGRESS_SHARED_PATH
+          value: /shared
+        - name: K8S_BRIDGE_BASE_URL
+          value: https://ingestion.dev.kerno.io:443/k8s-bridge/vector
+        - name: KERNO_CLOUD_INGESTION_URL
+          value: https://ingestion.dev.kerno.io:443
+        image: public.ecr.aws/fyck.io/vector-egress:latest
+        name: vector-egress
+        resources:
+          limits:
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        volumeMounts:
+        - mountPath: /shared
+          name: vector-offload-volume
+        - mountPath: /vector-data-dir
+          name: vector-data-volume
+      initContainers:
+      - command:
+        - /bin/sh
+        - -c
+        - 'echo "Retrieving API token from Kerno"; response=$(curl -s -w "%{http_code}"
+          -H "x-kerno-api-key: $API_KEY" https://ingestion.dev.kerno.io:443/k8s-bridge/installation);
+          http_status=$(echo "$response" | rev | cut -c 1-3 | rev); if [ "$http_status"
+          -ne 200 ]; then echo "An error occurred retrieving the API token, exiting";
+          exit 1; fi; mkdir /shared/secrets; echo "$response" | head -c -4 > /shared/secrets/config.json;
+          echo -e "Token saved successfully"'
+        env:
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: INSTALLATION_KEY
+              name: installation-config
+        image: curlimages/curl@sha256:d43bdb28bae0be0998f3be83199bfb2b81e0a30b034b6d7586ce7e05de34c3fd
+        name: load-token
+        resources:
+          limits:
+            cpu: 50m
+            memory: 32Mi
+          requests:
+            cpu: 50m
+            memory: 32Mi
+        volumeMounts:
+        - mountPath: /shared
+          name: vector-offload-volume
+      nodeSelector:
+        kubernetes.io/os: linux
+      serviceAccountName: kerno-sa
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - emptyDir: {}
+        name: vector-offload-volume
+      - emptyDir: {}
+        name: vector-data-volume
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nanobe
+  name: vector-egress
+  namespace: kerno
+spec:
+  ports:
+  - name: http
+    port: 6000
+    protocol: TCP
+  selector:
+    app.kubernetes.io/instance: nanobe
+    app.kubernetes.io/name: nanobe
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app.kubernetes.io/app: nanobe
+    app.kubernetes.io/component: vector-agent
+    app.kubernetes.io/part-of: nanobe
+  name: vector-agent
+  namespace: kerno
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/app: nanobe
+      app.kubernetes.io/component: vector-agent
+      app.kubernetes.io/part-of: nanobe
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/app: nanobe
+        app.kubernetes.io/component: vector-agent
+        app.kubernetes.io/part-of: nanobe
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: eks.amazonaws.com/compute-type
+                operator: NotIn
+                values:
+                - fargate
+      containers:
+      - args:
+        - --config-dir
+        - "/etc/vector/kerno/{{ .Values.cloud | default "console" | lower }}"
+        - --config-dir
+        - /var/run/secrets/kubernetes.io/serviceaccount
+        - -t
+        - "2"
+        env:
+        - name: VECTOR_LOG
+          value: info
+        - name: BUCKET_NAME
+          value: {{ .Values.bucketName | default "kerno-samples-" }}
+        - name: VECTOR_SELF_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: VECTOR_SELF_POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: VECTOR_SELF_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: PROCFS_ROOT
+          value: /host/proc
+        - name: SYSFS_ROOT
+          value: /host/sys
+        - name: NANOBE_STACK_TRACE_AGGREGATION_ENABLED
+          value: "true"
+        image: public.ecr.aws/fyck.io/vector-agent:latest
+        imagePullPolicy: Always
+        name: vector
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 64Mi
+        volumeMounts:
+        - mountPath: /vector-data-dir
+          name: data
+        - mountPath: /var/log
+          name: var-log
+          readOnly: true
+        - mountPath: /var/lib/
+          name: var-lib
+          readOnly: true
+        - mountPath: /host/proc
+          name: procfs
+          readOnly: true
+        - mountPath: /host/sys
+          name: sysfs
+          readOnly: true
+      nodeSelector:
+        kubernetes.io/os: linux
+      serviceAccount: kerno-sa
+      terminationGracePeriodSeconds: 60
+      tolerations:
+      - operator: Exists
+      volumes:
+      - hostPath:
+          path: /var/lib/vector
+          type: ""
+        name: data
+      - hostPath:
+          path: /var/log
+          type: ""
+        name: var-log
+      - hostPath:
+          path: /var/lib/
+          type: ""
+        name: var-lib
+      - hostPath:
+          path: /proc
+          type: ""
+        name: procfs
+      - hostPath:
+          path: /sys
+          type: ""
+        name: sysfs
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kerno-sa
+  namespace: kerno
+  {{- with .Values.serviceAccountAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
