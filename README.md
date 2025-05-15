@@ -3,6 +3,7 @@
 ## Add the Helm Repository
 
 ```bash
+
 helm repo add kerno-dev https://kernoio.github.io/helm-charts-dev
 ```
 
@@ -11,6 +12,7 @@ helm repo add kerno-dev https://kernoio.github.io/helm-charts-dev
 Replace `<KERNO_API_KEY>` with your actual API key:
 
 ```bash
+
 helm install kerno-agent kerno-dev/agent \
   --create-namespace \
   --namespace kerno \
