@@ -1,0 +1,6 @@
+apiKey: kerno-api-key
+cloud: aws
+bucketName: my-app-logs
+
+serviceAccountAnnotations:
+  eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/my-eks-role
