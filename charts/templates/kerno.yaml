@@ -1,50 +1,37 @@
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+apiVersion: v1
+kind: Service
 metadata:
-  name: kerno:read-only-role-binding
+  labels:
+    app: nanobe
+  name: vector-egress
   namespace: kerno
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kerno:read-only-role
-subjects:
-- kind: ServiceAccount
-  name: kerno-sa
-  namespace: kerno
+spec:
+  ports:
+  - name: http
+    port: 6000
+    protocol: TCP
+  selector:
+    app.kubernetes.io/instance: nanobe
+    app.kubernetes.io/name: nanobe
+  type: ClusterIP
 ---
 apiVersion: v1
-data:
-  INSTALLATION_KEY: {{ .Values.apiKey | b64enc | quote }}
-kind: Secret
+kind: Service
 metadata:
-  name: installation-config
+  labels:
+    app: nanobe
+  name: nanobe
   namespace: kerno
-type: Opaque
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: kerno-sa
-  namespace: kerno
-  {{- with .Values.serviceAccountAnnotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: kerno:read-only-role
-  namespace: kerno
-rules:
-- apiGroups:
-  - '*'
-  resources:
-  - '*'
-  verbs:
-  - get
-  - watch
-  - list
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app.kubernetes.io/instance: nanobe
+    app.kubernetes.io/name: nanobe
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -95,7 +82,7 @@ spec:
           value: /shared
         - name: POSTGRES_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/nanobe@sha256:a876c56869db3515329dbe87c973f0681b543c58363c438967a59f1b218d8bdc
+        image: public.ecr.aws/fyck.io/nanobe@sha256:c27e93d03d3ab231196a5c694f0232cfbb3f31acc69bff6b2a2174987fae3317
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -188,39 +175,23 @@ spec:
         name: vector-data-volume
 ---
 apiVersion: v1
-kind: Service
+kind: ServiceAccount
 metadata:
-  labels:
-    app: nanobe
-  name: vector-egress
+  name: kerno-sa
   namespace: kerno
-spec:
-  ports:
-  - name: http
-    port: 6000
-    protocol: TCP
-  selector:
-    app.kubernetes.io/instance: nanobe
-    app.kubernetes.io/name: nanobe
-  type: ClusterIP
+  {{- with .Values.serviceAccountAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 ---
 apiVersion: v1
-kind: Service
+data:
+  INSTALLATION_KEY: {{ .Values.apiKey | b64enc | quote }}
+kind: Secret
 metadata:
-  labels:
-    app: nanobe
-  name: nanobe
+  name: installation-config
   namespace: kerno
-spec:
-  ports:
-  - name: http
-    port: 80
-    protocol: TCP
-    targetPort: 8080
-  selector:
-    app.kubernetes.io/instance: nanobe
-    app.kubernetes.io/name: nanobe
-  type: ClusterIP
+type: Opaque
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -338,6 +309,35 @@ spec:
           path: /sys
           type: ""
         name: sysfs
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kerno:read-only-role
+  namespace: kerno
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - get
+  - watch
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kerno:read-only-role-binding
+  namespace: kerno
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kerno:read-only-role
+subjects:
+- kind: ServiceAccount
+  name: kerno-sa
+  namespace: kerno
 ---
 apiVersion: apps/v1
 kind: DaemonSet
