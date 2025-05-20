@@ -287,7 +287,7 @@ spec:
           readOnly: true
       nodeSelector:
         kubernetes.io/os: linux
-        {{- if eq (lower .Values.cloud) "gcp" }}
+        {{- if eq (lower (default "" .Values.cloud)) "gcp" }}
         iam.gke.io/gke-metadata-server-enabled: "true"
         {{- end }}
       serviceAccountName: kerno-sa
