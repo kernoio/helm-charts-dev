@@ -166,6 +166,9 @@ spec:
           name: vector-offload-volume
       nodeSelector:
         kubernetes.io/os: linux
+        {{- if eq (lower .Values.cloud) "gcp" }}
+        iam.gke.io/gke-metadata-server-enabled: "true"
+        {{- end }}
       serviceAccountName: kerno-sa
       terminationGracePeriodSeconds: 10
       volumes:
@@ -284,7 +287,10 @@ spec:
           readOnly: true
       nodeSelector:
         kubernetes.io/os: linux
-      serviceAccount: kerno-sa
+        {{- if eq (lower .Values.cloud) "gcp" }}
+        iam.gke.io/gke-metadata-server-enabled: "true"
+        {{- end }}
+      serviceAccountName: kerno-sa
       terminationGracePeriodSeconds: 60
       tolerations:
       - operator: Exists

@@ -120,7 +120,63 @@ serviceAccountAnnotations:
   eks.amazonaws.com/role-arn: <role-arn>
 ```
 
-You can find an example in `examples/aws-values.yaml`.
+An example can be found in `examples/aws-values.yaml`.
+
+### 6. Install the Chart Using Your Config
+
+```bash
+
+helm install kerno-agent kerno-dev/agent \
+  --create-namespace \
+  --namespace kerno \
+  -f path/to/values.yaml
+```
+---
+## Using GCP Cloud Storage for Persistent Logs
+
+To enable persistent storage of logs and stack traces in Google Cloud Storage, follow the steps below to provision the necessary infrastructure and configure your GKE cluster accordingly.
+
+### Prerequisites
+
+- Ensure that **Workload Identity Federation** is enabled on the cluster.
+- Enable the **GKE Metadata Server** on at least one node pool.
+
+### Step 1: Create a Cloud Storage Bucket
+
+Create a bucket in the same GCP project as the GKE cluster. This bucket will store Kerno logs and stack traces. Record the bucket name for later use.
+
+### Step 2: Create a Google Service Account
+
+In the GCP project, create a Service Account. Note the email address of the newly created account.
+
+### Step 3: Grant the Service Account Access to the Bucket
+
+1. Navigate to the Cloud Storage bucket in the console.
+2. Click **"Grant Access"**.
+3. For **Principal**, enter the Service Account's email.
+4. For **Role**, select `Storage Admin`.
+5. Save the changes.
+
+### Step 4: Allow Workload Identity Access to the Service Account
+
+1. Navigate to the Service Account in the IAM console.
+2. Click **"Grant Access"**.
+3. Add the following principal: `<project-id>.svc.id.goog[kerno/kerno-sa]`
+4. Select the `Service Account Admin` role.
+5. Save the configuration.
+
+### Step 5: Configure Helm Chart Values
+
+Update your `values.yaml` with the following content:
+
+```yaml
+cloud: GCP
+bucketName: <bucket-name>
+serviceAccountAnnotations:
+  iam.gke.io/gcp-service-account: <service-account-email>
+```
+
+An example can be found in `examples/gcp-values.yaml`.
 
 ### 6. Install the Chart Using Your Config
 

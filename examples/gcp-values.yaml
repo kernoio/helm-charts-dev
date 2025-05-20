@@ -1,0 +1,6 @@
+apiKey: kerno-api-key
+cloud: GCP
+bucketName: my-cluster-logs-and-stacktraces
+
+serviceAccountAnnotations:
+  iam.gke.io/gcp-service-account: kerno-pluggable-storage@installer-452609.iam.gserviceaccount.com
