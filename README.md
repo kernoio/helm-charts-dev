@@ -19,15 +19,19 @@ helm install kerno-agent kerno-dev/agent \
   --set apiKey="<KERNO_API_KEY>"
 ```
 
-## Using AWS S3 for Storage
+## Persistent Storage
 
-To enable persistent storage of logs and stack traces in AWS S3, follow the steps below to set up the required infrastructure:
+Kerno allows storing logs and stack traces persistently within AWS accounts 
+and GCP projects with S3 and Cloud Storage respectively. 
+Below are steps needed to create and configure access to an object storage resource.
 
-### 1. Create an S3 Bucket
+### AWS S3 for Persistent Storage
+
+#### 1. Create an S3 Bucket
 
 Create a bucket in S3 and note the name. This bucket will be used to store Kerno logs and stack traces.
 
-### 2. Set Up IAM Role for EKS Access
+#### 2. Set Up IAM Role for EKS Access
 
 Create an IAM role that your EKS cluster can assume via its OIDC provider:
 
@@ -39,7 +43,7 @@ Create an IAM role that your EKS cluster can assume via its OIDC provider:
     - **Operator**: `StringLike`
     - **Value**: `system:serviceaccount:kerno:*`
 
-#### Trust Policy Example
+##### Trust Policy Example
 
 Replace placeholders with your actual values:
 
@@ -50,7 +54,7 @@ Replace placeholders with your actual values:
     {
       "Effect": "Allow",
       "Principal": {
-        "Federated": "arn:aws:iam::<account-id>:oidc-provider/<oidc-provider-url>"
+        "Federated": "arn:aws:iam::<account-id>:oidc-provider/<oidc-provider-url-https-prefix-removed>"
       },
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
@@ -66,7 +70,7 @@ Replace placeholders with your actual values:
 }
 ```
 
-### 3. Attach Permissions to the IAM Role
+#### 3. Attach Permissions to the IAM Role
 
 Attach an inline policy granting access to the bucket:
 
@@ -86,9 +90,9 @@ Attach an inline policy granting access to the bucket:
 }
 ```
 
-### 4. Update the Bucket Policy
+#### 4. Update the Bucket Policy
 
-Allow the IAM role access to the bucket:
+Allow the IAM role access to the bucket using the role arn from step 2:
 
 ```json
 {
@@ -109,7 +113,7 @@ Allow the IAM role access to the bucket:
 }
 ```
 
-### 5. Update `values.yaml`
+#### 5. Update `values.yaml`
 
 Set the following values in your `values.yaml`:
 
@@ -119,10 +123,11 @@ bucketName: <bucket-name>
 serviceAccountAnnotations:
   eks.amazonaws.com/role-arn: <role-arn>
 ```
+replacing `<bucket-name>` and `<role-arn>`.
 
 An example can be found in `examples/aws-values.yaml`.
 
-### 6. Install the Chart Using Your Config
+#### 6. Install the Chart Using Your Config
 
 ```bash
 
@@ -132,40 +137,40 @@ helm install kerno-agent kerno-dev/agent \
   -f path/to/values.yaml
 ```
 ---
-## Using GCP Cloud Storage for Persistent Logs
+### GCP Cloud Storage for Persistent Storage
 
-To enable persistent storage of logs and stack traces in Google Cloud Storage, follow the steps below to provision the necessary infrastructure and configure your GKE cluster accordingly.
-
-### Prerequisites
+#### Prerequisites
 
 - Ensure that **Workload Identity Federation** is enabled on the cluster.
 - Enable the **GKE Metadata Server** on at least one node pool.
 
-### Step 1: Create a Cloud Storage Bucket
 
-Create a bucket in the same GCP project as the GKE cluster. This bucket will store Kerno logs and stack traces. Record the bucket name for later use.
+#### Step 1: Create a Google Service Account
 
-### Step 2: Create a Google Service Account
+In the GCP project, create a Service Account, noting its email address.
 
-In the GCP project, create a Service Account. Note the email address of the newly created account.
+#### Step 2: Allow Workload Identity Access to the Service Account
 
-### Step 3: Grant the Service Account Access to the Bucket
+1. Navigate to the Service Account in the IAM console.
+2. Click **"Grant Access"**.
+3. Add the following principal: `<project-id>.svc.id.goog[kerno/kerno-sa]`, 
+ replacing `<project-id>` with the GCP project id.
+4. Select the `Service Account Admin` role.
+5. Save the configuration.
 
-1. Navigate to the Cloud Storage bucket in the console.
+#### Step 3: Create a Cloud Storage Bucket
+
+Create a bucket in the same GCP project as the GKE cluster.
+
+#### Step 4: Grant the Service Account Access to the Bucket
+
+1. Navigate to the Cloud Storage bucket.
 2. Click **"Grant Access"**.
 3. For **Principal**, enter the Service Account's email.
 4. For **Role**, select `Storage Admin`.
 5. Save the changes.
 
-### Step 4: Allow Workload Identity Access to the Service Account
-
-1. Navigate to the Service Account in the IAM console.
-2. Click **"Grant Access"**.
-3. Add the following principal: `<project-id>.svc.id.goog[kerno/kerno-sa]`
-4. Select the `Service Account Admin` role.
-5. Save the configuration.
-
-### Step 5: Configure Helm Chart Values
+#### Step 5: Configure Helm Chart Values
 
 Update your `values.yaml` with the following content:
 
@@ -175,6 +180,7 @@ bucketName: <bucket-name>
 serviceAccountAnnotations:
   iam.gke.io/gcp-service-account: <service-account-email>
 ```
+replacing `<bucket-name>` and `<service-account-email>`.
 
 An example can be found in `examples/gcp-values.yaml`.
 
@@ -188,3 +194,9 @@ helm install kerno-agent kerno-dev/agent \
   -f path/to/values.yaml
 ```
 ---
+
+> **_NOTE_** 
+> 
+> The `values.yaml` should be committed to version control so it can
+> be used when upgrading the Kerno helm chart. The API Key should 
+> also be kept secret.
