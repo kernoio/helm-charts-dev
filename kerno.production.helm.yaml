@@ -82,7 +82,7 @@ spec:
           value: /shared
         - name: POSTGRES_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/nanobe@sha256:6e7af5ea58a0ae4c3c27aded8b929f287dd89662a7ab149b2836ef7ff5d00d5f
+        image: public.ecr.aws/fyck.io/nanobe@sha256:e78b35fc7c0347a59b7017263044e6ff7ce8e33abc656b28fc0d9819468eff8d
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -127,7 +127,7 @@ spec:
           value: https://ingestion.kerno.io:443/k8s-bridge/vector
         - name: KERNO_CLOUD_INGESTION_URL
           value: https://ingestion.kerno.io:443
-        image: public.ecr.aws/fyck.io/vector-egress@sha256:15bbaa9b0d2a8742b09b27c05b3af8152373d649dddca1be90ccd6d36f2c1e83
+        image: public.ecr.aws/fyck.io/vector-egress@sha256:19f1b131e733fc2567cc850074b6413aba705297507188f5dd2ce76403238722
         name: vector-egress
         resources:
           limits:
