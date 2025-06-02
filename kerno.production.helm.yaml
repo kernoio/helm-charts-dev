@@ -82,7 +82,7 @@ spec:
           value: /shared
         - name: POSTGRES_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/nanobe@sha256:cdded00484f7b94cbf3e7733963fe6c551ff10184f3783bf94a4cd1aefac078e
+        image: public.ecr.aws/fyck.io/nanobe@sha256:676f621cf982c82f954a1ceb64b4a09f2e132f8770d7f4aac07341ab8437dec3
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -127,7 +127,7 @@ spec:
           value: https://ingestion.kerno.io:443/k8s-bridge/vector
         - name: KERNO_CLOUD_INGESTION_URL
           value: https://ingestion.kerno.io:443
-        image: public.ecr.aws/fyck.io/vector-egress@sha256:19f1b131e733fc2567cc850074b6413aba705297507188f5dd2ce76403238722
+        image: public.ecr.aws/fyck.io/vector-egress@sha256:15caf1084f2a3457c0e551d22e4d21772fc8d47ae3516723cf82af7637c2b4d6
         name: vector-egress
         resources:
           limits:
@@ -234,8 +234,6 @@ spec:
       containers:
       - args:
         - --config-dir
-        - "/etc/vector/kerno/{{ .Values.cloud | default "console" | lower }}"
-        - --config-dir
         - /var/run/secrets/kubernetes.io/serviceaccount
         - -t
         - "2"
@@ -265,7 +263,7 @@ spec:
           value: /host/sys
         - name: NANOBE_STACK_TRACE_AGGREGATION_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/vector-agent@sha256:1d0fc91c7a9d86bffe30c04a5c8e3d4cc4ce27bfe5cc311782c1d826df839714
+        image: public.ecr.aws/fyck.io/vector-agent@sha256:04ad43052d8c4657af6aed024529bcf084958f56fb68894a284a921c8d22b245
         imagePullPolicy: Always
         name: vector
         resources:
