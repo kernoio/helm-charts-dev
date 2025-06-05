@@ -264,7 +264,7 @@ spec:
           value: /host/sys
         - name: NANOBE_STACK_TRACE_AGGREGATION_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/vector-agent@sha256:ae5421c210ccd87ef1495b94510e7b4edd12779cff26f57db742eb6628f7cd97
+        image: public.ecr.aws/fyck.io/vector-agent@sha256:5ae888f69f1036360eae9163e632f9560a2800977b3033b5a6af98a5ee2eece6
         imagePullPolicy: Always
         name: vector
         resources:
