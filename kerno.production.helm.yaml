@@ -242,6 +242,7 @@ spec:
           value: info
         - name: BUCKET_NAME
           value: {{ .Values.bucketName | default "kerno-samples-" }}
+        - name: INSTALLATION_ID
         - name: VECTOR_SELF_NODE_NAME
           valueFrom:
             fieldRef:
@@ -263,7 +264,7 @@ spec:
           value: /host/sys
         - name: NANOBE_STACK_TRACE_AGGREGATION_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/vector-agent@sha256:a496921508737b1bea5dbf8dec8ac082d3749d73582d83b82ab94eb67e73b972
+        image: public.ecr.aws/fyck.io/vector-agent@sha256:ae5421c210ccd87ef1495b94510e7b4edd12779cff26f57db742eb6628f7cd97
         imagePullPolicy: Always
         name: vector
         resources:
