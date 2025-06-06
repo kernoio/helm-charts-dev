@@ -13,10 +13,11 @@ Replace `<KERNO_API_KEY>` with your actual API key:
 
 ```bash
 
-helm install kerno-agent kerno-dev/agent \
+helm upgrade --install kerno-agent kerno-dev/agent \
   --create-namespace \
   --namespace kerno \
-  --set apiKey="<KERNO_API_KEY>"
+  --set apiKey="<KERNO_API_KEY>" \
+  --atomic
 ```
 
 ## Persistent Storage
@@ -131,10 +132,11 @@ An example can be found in `examples/aws-values.yaml`.
 
 ```bash
 
-helm install kerno-agent kerno-dev/agent \
+helm upgrade --install kerno-agent kerno-dev/agent \
   --create-namespace \
   --namespace kerno \
-  -f path/to/values.yaml
+  -f path/to/values.yaml \
+  --atomic
 ```
 ---
 ### GCP Cloud Storage for Persistent Storage
@@ -188,10 +190,11 @@ An example can be found in `examples/gcp-values.yaml`.
 
 ```bash
 
-helm install kerno-agent kerno-dev/agent \
+helm upgrade --install kerno-agent kerno-dev/agent \
+  -f path/to/values.yaml \
   --create-namespace \
   --namespace kerno \
-  -f path/to/values.yaml
+  --atomic 
 ```
 ---
 
@@ -200,3 +203,20 @@ helm install kerno-agent kerno-dev/agent \
 > The `values.yaml` should be committed to version control so it can
 > be used when upgrading the Kerno helm chart. The API Key should 
 > also be kept secret.
+> To pass the API Key in CI, use an empty string in `values.yaml` and
+> override it using `--set apiKey=${{ secrets.KERNO_API_KEY }}`.
+> For example, if using Github Actions the command becomes:
+
+```bash
+
+ helm upgrade --install kerno-agent kerno-dev/agent \
+  -f path/to/values.yaml \
+  --create-namespace \
+  --namespace kerno \
+  --set apiKey=${{ secrets.KERNO_API_KEY}}
+  --atomic 
+```
+
+> It can also be used with an IaC framework that can manage Helm charts such as Terraform or Pulumi.
+> Simply follow the docs to deploy a Helm Chart for the provider using the appropriate values
+> where needed.
