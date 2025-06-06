@@ -238,7 +238,7 @@ spec:
       containers:
       - args:
         - --config-dir
-        - /etc/vector/kerno/ephemeral
+        - "/etc/vector/kerno/{{ .Values.cloud | default "ephemeral" | lower }}"
         - --config-dir
         - /var/run/secrets/kubernetes.io/serviceaccount
         - -t
