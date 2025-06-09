@@ -154,10 +154,11 @@ spec:
           Bearer $TOKEN" https://kubernetes.default.svc/api/v1/namespaces/kube-system
           | grep ''"uid"'' | head -n1 | awk -F''"'' ''{print $4}''); echo "Retrieving
           API token from Kerno"; response=$(curl -s -w "%{http_code}" -H "x-kerno-api-key:
-          $API_KEY" -H "kube-system-uid: $KUBE_SYSTEM_UID" https://ingestion.kerno.io:443/k8s-bridge/token-handshake);
-          http_status=$(echo "$response" | rev | cut -c 1-3 | rev); if [ "$http_status"
-          -ne 200 ]; then echo "An error occurred retrieving the API token, exiting";
-          exit 1; fi; mkdir /shared/secrets; echo "$response" | head -c -4 > /shared/secrets/config.json;
+          $API_KEY" -H "installation-type: helm" -H "kube-system-uid: $KUBE_SYSTEM_UID"
+          https://ingestion.kerno.io:443/k8s-bridge/token-handshake); http_status=$(echo
+          "$response" | rev | cut -c 1-3 | rev); if [ "$http_status" -ne 200 ]; then
+          echo "An error occurred retrieving the API token, exiting"; exit 1; fi;
+          mkdir /shared/secrets; echo "$response" | head -c -4 > /shared/secrets/config.json;
           echo -e "Token saved successfully"'
         env:
         - name: API_KEY
