@@ -220,3 +220,13 @@ helm upgrade --install kerno-agent kerno-dev/agent \
 > It can also be used with an IaC framework that can manage Helm charts such as Terraform or Pulumi.
 > Simply follow the docs to deploy a Helm Chart for the provider using the appropriate values
 > where needed.
+
+## Updating Kerno
+
+To update Kerno, update helm's local repository:
+
+```bash
+helm repo update
+```
+
+and re-run the installation command.
