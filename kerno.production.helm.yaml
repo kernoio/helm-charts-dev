@@ -87,7 +87,7 @@ spec:
           value: /shared
         - name: POSTGRES_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/nanobe@sha256:78abdbcee115a32df8536f2ab7e241246c1631338349320d96c8b34ea5b3349c
+        image: public.ecr.aws/fyck.io/nanobe@sha256:126ecaaa8852a339041b965df2d0024b2cf1f6c67b7f0ebc9e205aa428d61a4b
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -254,7 +254,6 @@ spec:
           value: info
         - name: BUCKET_NAME
           value: {{ .Values.bucketName | default "kerno-samples-" }}
-        - name: INSTALLATION_ID
         - name: VECTOR_SELF_NODE_NAME
           valueFrom:
             fieldRef:
@@ -276,7 +275,7 @@ spec:
           value: /host/sys
         - name: NANOBE_STACK_TRACE_AGGREGATION_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/vector-agent@sha256:3710ba5060a1cef752f29f860afdff8a3f35cc6061e71abef61312be88a58c84
+        image: public.ecr.aws/fyck.io/vector-agent@sha256:6b7c9e529ebabe7ff67a6fbacbc76908c072ef182bd10f39cfbe52da8534f428
         imagePullPolicy: Always
         name: vector
         resources:
