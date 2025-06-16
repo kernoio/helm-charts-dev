@@ -52,7 +52,7 @@ spec:
           value: /shared
         - name: POSTGRES_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/nanobe@sha256:81cb695630e3f9eeaf9d7dade92e106adeca6c5163fccfc49fc361e8abb9e6e9
+        image: public.ecr.aws/fyck.io/nanobe@sha256:5a089d3c09b8ea6d2a8d94cc48935c2438d529c35df6fa08126bd803bb5f3a88
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -222,7 +222,7 @@ spec:
           value: /host/sys
         - name: NANOBE_STACK_TRACE_AGGREGATION_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/vector-agent@sha256:58803b0b39a722b384c98be50f38f900f9e21c1078f044f99e1456478ad27dc8
+        image: public.ecr.aws/fyck.io/vector-agent@sha256:36324f8d428d8e6393332e0f055834f1ae467952840c116f9123c54177fb086e
         imagePullPolicy: Always
         name: vector
         resources:
