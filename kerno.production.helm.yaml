@@ -97,7 +97,7 @@ spec:
           value: https://ingestion.kerno.io:443/k8s-bridge/vector
         - name: KERNO_CLOUD_INGESTION_URL
           value: https://ingestion.kerno.io:443
-        image: public.ecr.aws/fyck.io/vector-egress@sha256:d7b93e259e2fb93ea56766725cec319e915ef41a36883cc97d297aae412e765d
+        image: public.ecr.aws/fyck.io/vector-egress@sha256:f4a73341e93a3f69cb208880ed55e3cc19082e4684a452077730b0fb38d74061
         imagePullPolicy: Always
         name: vector-egress
         resources:
