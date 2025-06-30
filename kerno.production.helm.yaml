@@ -152,11 +152,11 @@ spec:
         resources:
           limits:
             ephemeral-storage: 4Gi
-            memory: 2Gi
+            memory: 1792Mi
           requests:
             cpu: 200m
             ephemeral-storage: 2Gi
-            memory: 2Gi
+            memory: 1792Mi
         volumeMounts:
         - mountPath: /shared
           name: vector-offload-volume
@@ -184,10 +184,10 @@ spec:
         name: vector-egress
         resources:
           limits:
-            memory: 256Mi
+            memory: 2Gi
           requests:
             cpu: 100m
-            memory: 128Mi
+            memory: 384Mi
         volumeMounts:
         - mountPath: /shared
           name: vector-offload-volume
