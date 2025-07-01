@@ -1,3 +1,51 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    helm.sh/hook: post-install
+    helm.sh/hook-delete-policy: hook-succeeded
+  name: notify-on-post-install
+  namespace: kerno
+spec:
+  template:
+    spec:
+      containers:
+      - args:
+        - -X
+        - POST
+        - -H
+        - 'x-kerno-api-key: {{ .Values.apiKey }}'
+        - https://organizations.dev.kerno.io/organizations-service/installation-status/post
+        command:
+        - curl
+        image: curlimages/curl@sha256:d43bdb28bae0be0998f3be83199bfb2b81e0a30b034b6d7586ce7e05de34c3fd
+        name: post-install-hook
+      restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    helm.sh/hook: pre-install
+    helm.sh/hook-delete-policy: hook-succeeded
+  name: notify-on-pre-install
+  namespace: kerno
+spec:
+  template:
+    spec:
+      containers:
+      - args:
+        - -X
+        - POST
+        - -H
+        - 'x-kerno-api-key: {{ .Values.apiKey }}'
+        - https://organizations.dev.kerno.io/organizations-service/installation-status/pre
+        command:
+        - curl
+        image: curlimages/curl@sha256:d43bdb28bae0be0998f3be83199bfb2b81e0a30b034b6d7586ce7e05de34c3fd
+        name: pre-install-hook
+      restartPolicy: OnFailure
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -134,7 +182,7 @@ spec:
           value: /shared
         - name: POSTGRES_ENABLED
           value: "true"
-        image: public.ecr.aws/fyck.io/nanobe@sha256:69598e97479eaa3f36a4dbc53001b8f35d4d2cff9bef979c21b5b06d7f02cf36
+        image: public.ecr.aws/fyck.io/nanobe@sha256:97395ea36b9afa4200354d280b6c36b17d388a5be03ee45096dd558cc6eda590
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -400,6 +448,30 @@ subjects:
 - kind: ServiceAccount
   name: kerno-sa
   namespace: kerno
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    helm.sh/hook: uninstall
+    helm.sh/hook-delete-policy: hook-succeeded
+  name: notify-on-uninstall
+  namespace: kerno
+spec:
+  template:
+    spec:
+      containers:
+      - args:
+        - -X
+        - POST
+        - -H
+        - 'x-kerno-api-key: {{ .Values.apiKey }}'
+        - https://organizations.dev.kerno.io/organizations-service/installation-status/uninstall
+        command:
+        - curl
+        image: curlimages/curl@sha256:d43bdb28bae0be0998f3be83199bfb2b81e0a30b034b6d7586ce7e05de34c3fd
+        name: uninstall-hook
+      restartPolicy: OnFailure
 ---
 apiVersion: v1
 kind: Service
