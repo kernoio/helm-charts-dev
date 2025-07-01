@@ -2,30 +2,6 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   annotations:
-    helm.sh/hook: post-install,post-upgrade
-    helm.sh/hook-delete-policy: hook-succeeded
-  name: notify-on-post-install
-  namespace: kerno
-spec:
-  template:
-    spec:
-      containers:
-      - args:
-        - -X
-        - POST
-        - -H
-        - 'x-kerno-api-key: {{ .Values.apiKey }}'
-        - https://api.dev.kerno.io/organizations-service/installation-status/post
-        command:
-        - curl
-        image: curlimages/curl@sha256:d43bdb28bae0be0998f3be83199bfb2b81e0a30b034b6d7586ce7e05de34c3fd
-        name: post-install-hook
-      restartPolicy: OnFailure
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  annotations:
     helm.sh/hook: pre-install
     helm.sh/hook-delete-policy: hook-succeeded
   name: notify-on-pre-install
@@ -39,7 +15,7 @@ spec:
         - POST
         - -H
         - 'x-kerno-api-key: {{ .Values.apiKey }}'
-        - https://api.dev.kerno.io/organizations-service/installation-status/pre
+        - https://organizations.dev.kerno.io/organizations-service/installation-status/pre
         command:
         - curl
         image: curlimages/curl@sha256:d43bdb28bae0be0998f3be83199bfb2b81e0a30b034b6d7586ce7e05de34c3fd
@@ -449,6 +425,30 @@ subjects:
   name: kerno-sa
   namespace: kerno
 ---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: hook-succeeded
+  name: notify-on-post-install,post-upgrade
+  namespace: kerno
+spec:
+  template:
+    spec:
+      containers:
+      - args:
+        - -X
+        - POST
+        - -H
+        - 'x-kerno-api-key: {{ .Values.apiKey }}'
+        - https://organizations.dev.kerno.io/organizations-service/installation-status/post
+        command:
+        - curl
+        image: curlimages/curl@sha256:d43bdb28bae0be0998f3be83199bfb2b81e0a30b034b6d7586ce7e05de34c3fd
+        name: post-install,post-upgrade-hook
+      restartPolicy: OnFailure
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -511,7 +511,7 @@ spec:
         - POST
         - -H
         - 'x-kerno-api-key: {{ .Values.apiKey }}'
-        - https://api.dev.kerno.io/organizations-service/installation-status/uninstall
+        - https://organizations.dev.kerno.io/organizations-service/installation-status/uninstall
         command:
         - curl
         image: curlimages/curl@sha256:d43bdb28bae0be0998f3be83199bfb2b81e0a30b034b6d7586ce7e05de34c3fd
