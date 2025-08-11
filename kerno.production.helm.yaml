@@ -1,102 +1,16 @@
-apiVersion: apps/v1
-kind: DaemonSet
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
 metadata:
-  labels:
-    app.kubernetes.io/app: nanobe
-    app.kubernetes.io/component: preon
-    app.kubernetes.io/part-of: nanobe
-  name: preon
+  name: kerno:read-only-role-binding
   namespace: kerno
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/app: nanobe
-      app.kubernetes.io/component: preon
-      app.kubernetes.io/part-of: nanobe
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/app: nanobe
-        app.kubernetes.io/component: preon
-        app.kubernetes.io/part-of: nanobe
-    spec:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: eks.amazonaws.com/compute-type
-                operator: NotIn
-                values:
-                - fargate
-      containers:
-      - env:
-        - name: LOG_LEVEL
-          value: info
-        - name: NANOBE_HOST
-          value: nanobe
-        - name: NANOBE_PORT
-          value: "80"
-        - name: NANOBE_PATH
-          value: ingestor/v2
-        image: public.ecr.aws/fyck.io/preon:2025.6.18
-        imagePullPolicy: Always
-        name: main
-        resources:
-          limits:
-            memory: 128Mi
-          requests:
-            cpu: 50m
-            memory: 64Mi
-        securityContext:
-          capabilities:
-            add:
-            - SYS_ADMIN
-          privileged: true
-        volumeMounts:
-        - mountPath: /host
-          name: host-root
-          readOnly: true
-        - mountPath: /sys
-          name: host-sys
-          readOnly: true
-      hostPID: true
-      nodeSelector:
-        kubernetes.io/os: linux
-      terminationGracePeriodSeconds: 10
-      tolerations:
-      - operator: Exists
-      volumes:
-      - hostPath:
-          path: /
-          type: Directory
-        name: host-root
-      - hostPath:
-          path: /sys
-          type: Directory
-        name: host-sys
-  updateStrategy:
-    rollingUpdate:
-      maxUnavailable: 100%
-    type: RollingUpdate
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: nanobe
-  name: nanobe
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kerno:read-only-role
+subjects:
+- kind: ServiceAccount
+  name: kerno-sa
   namespace: kerno
-spec:
-  ports:
-  - name: http
-    port: 80
-    protocol: TCP
-    targetPort: 8080
-  selector:
-    app.kubernetes.io/instance: nanobe
-    app.kubernetes.io/name: nanobe
-  type: ClusterIP
 ---
 apiVersion: v1
 data:
@@ -141,37 +55,6 @@ spec:
         name: post-install-hook
       restartPolicy: OnFailure
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: nanobe
-  name: vector-egress
-  namespace: kerno
-spec:
-  ports:
-  - name: http
-    port: 6000
-    protocol: TCP
-  selector:
-    app.kubernetes.io/instance: nanobe
-    app.kubernetes.io/name: nanobe
-  type: ClusterIP
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: kerno:read-only-role-binding
-  namespace: kerno
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kerno:read-only-role
-subjects:
-- kind: ServiceAccount
-  name: kerno-sa
-  namespace: kerno
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -186,178 +69,6 @@ rules:
   - get
   - watch
   - list
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  annotations:
-    helm.sh/hook: post-delete
-    helm.sh/hook-delete-policy: hook-succeeded
-  name: notify-on-post-delete
-  namespace: kerno
-spec:
-  template:
-    spec:
-      containers:
-      - args:
-        - -X
-        - POST
-        - -H
-        - 'x-kerno-api-key: {{ .Values.apiKey }}'
-        - https://ingestion.kerno.io/organizations-service/installation-status/uninstall
-        command:
-        - curl
-        image: curlimages/curl@sha256:d43bdb28bae0be0998f3be83199bfb2b81e0a30b034b6d7586ce7e05de34c3fd
-        name: post-delete-hook
-      restartPolicy: OnFailure
----
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  labels:
-    app.kubernetes.io/app: nanobe
-    app.kubernetes.io/component: vector-agent
-    app.kubernetes.io/part-of: nanobe
-  name: vector-agent
-  namespace: kerno
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/app: nanobe
-      app.kubernetes.io/component: vector-agent
-      app.kubernetes.io/part-of: nanobe
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/app: nanobe
-        app.kubernetes.io/component: vector-agent
-        app.kubernetes.io/part-of: nanobe
-    spec:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: eks.amazonaws.com/compute-type
-                operator: NotIn
-                values:
-                - fargate
-      containers:
-      - args:
-        - --config-dir
-        - "/etc/vector/kerno/{{ .Values.cloud | default "ephemeral" | lower }}"
-        - --config-dir
-        - /var/run/secrets/kubernetes.io/serviceaccount
-        - -t
-        - "2"
-        env:
-        - name: VECTOR_LOG
-          value: info
-        - name: BUCKET_NAME
-          value: {{ .Values.bucketName | default "kerno-samples-" }}
-        - name: VECTOR_SELF_NODE_NAME
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: spec.nodeName
-        - name: VECTOR_SELF_POD_NAME
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.name
-        - name: VECTOR_SELF_POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        - name: PROCFS_ROOT
-          value: /host/proc
-        - name: SYSFS_ROOT
-          value: /host/sys
-        - name: NANOBE_STACK_TRACE_AGGREGATION_ENABLED
-          value: "true"
-        image: public.ecr.aws/fyck.io/vector-agent@sha256:1a2af73dd129de772b28ec755c26414452d1497b775ea3bbddb84340162bdd3c
-        imagePullPolicy: Always
-        name: vector
-        resources:
-          limits:
-            memory: 512Mi
-          requests:
-            cpu: 100m
-            memory: 64Mi
-        volumeMounts:
-        - mountPath: /vector-data-dir
-          name: data
-        - mountPath: /var/log
-          name: var-log
-          readOnly: true
-        - mountPath: /var/lib/
-          name: var-lib
-          readOnly: true
-        - mountPath: /host/proc
-          name: procfs
-          readOnly: true
-        - mountPath: /host/sys
-          name: sysfs
-          readOnly: true
-      nodeSelector:
-        kubernetes.io/os: linux
-        {{- if eq (lower (default "" .Values.cloud)) "gcp" }}
-        iam.gke.io/gke-metadata-server-enabled: "true"
-        {{- end }}
-      serviceAccountName: kerno-sa
-      terminationGracePeriodSeconds: 60
-      tolerations:
-      - operator: Exists
-      volumes:
-      - hostPath:
-          path: /var/lib/vector
-          type: ""
-        name: data
-      - hostPath:
-          path: /var/log
-          type: ""
-        name: var-log
-      - hostPath:
-          path: /var/lib/
-          type: ""
-        name: var-lib
-      - hostPath:
-          path: /proc
-          type: ""
-        name: procfs
-      - hostPath:
-          path: /sys
-          type: ""
-        name: sysfs
-  updateStrategy:
-    rollingUpdate:
-      maxUnavailable: 100%
-    type: RollingUpdate
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  annotations:
-    helm.sh/hook: pre-install
-    helm.sh/hook-delete-policy: hook-succeeded
-  name: notify-on-pre-install
-  namespace: kerno
-spec:
-  template:
-    spec:
-      containers:
-      - args:
-        - -X
-        - POST
-        - -H
-        - 'x-kerno-api-key: {{ .Values.apiKey }}'
-        - https://ingestion.kerno.io/organizations-service/installation-status/pre
-        command:
-        - curl
-        image: curlimages/curl@sha256:d43bdb28bae0be0998f3be83199bfb2b81e0a30b034b6d7586ce7e05de34c3fd
-        name: pre-install-hook
-      restartPolicy: OnFailure
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -517,3 +228,292 @@ spec:
         name: vector-offload-volume
       - emptyDir: {}
         name: vector-data-volume
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app.kubernetes.io/app: nanobe
+    app.kubernetes.io/component: preon
+    app.kubernetes.io/part-of: nanobe
+  name: preon
+  namespace: kerno
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/app: nanobe
+      app.kubernetes.io/component: preon
+      app.kubernetes.io/part-of: nanobe
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/app: nanobe
+        app.kubernetes.io/component: preon
+        app.kubernetes.io/part-of: nanobe
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: eks.amazonaws.com/compute-type
+                operator: NotIn
+                values:
+                - fargate
+      containers:
+      - env:
+        - name: LOG_LEVEL
+          value: info
+        - name: NANOBE_HOST
+          value: nanobe
+        - name: NANOBE_PORT
+          value: "80"
+        - name: NANOBE_PATH
+          value: ingestor/v2
+        image: public.ecr.aws/fyck.io/preon:2025.6.18
+        imagePullPolicy: Always
+        name: main
+        resources:
+          limits:
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        securityContext:
+          capabilities:
+            add:
+            - SYS_ADMIN
+          privileged: true
+        volumeMounts:
+        - mountPath: /host
+          name: host-root
+          readOnly: true
+        - mountPath: /sys
+          name: host-sys
+          readOnly: true
+      hostPID: true
+      nodeSelector:
+        kubernetes.io/os: linux
+      terminationGracePeriodSeconds: 10
+      tolerations:
+      - operator: Exists
+      volumes:
+      - hostPath:
+          path: /
+          type: Directory
+        name: host-root
+      - hostPath:
+          path: /sys
+          type: Directory
+        name: host-sys
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 100%
+    type: RollingUpdate
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    helm.sh/hook: pre-install
+    helm.sh/hook-delete-policy: hook-succeeded
+  name: notify-on-pre-install
+  namespace: kerno
+spec:
+  template:
+    spec:
+      containers:
+      - args:
+        - -X
+        - POST
+        - -H
+        - 'x-kerno-api-key: {{ .Values.apiKey }}'
+        - https://ingestion.kerno.io/organizations-service/installation-status/pre
+        command:
+        - curl
+        image: curlimages/curl@sha256:d43bdb28bae0be0998f3be83199bfb2b81e0a30b034b6d7586ce7e05de34c3fd
+        name: pre-install-hook
+      restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    helm.sh/hook: post-delete
+    helm.sh/hook-delete-policy: hook-succeeded
+  name: notify-on-post-delete
+  namespace: kerno
+spec:
+  template:
+    spec:
+      containers:
+      - args:
+        - -X
+        - POST
+        - -H
+        - 'x-kerno-api-key: {{ .Values.apiKey }}'
+        - https://ingestion.kerno.io/organizations-service/installation-status/uninstall
+        command:
+        - curl
+        image: curlimages/curl@sha256:d43bdb28bae0be0998f3be83199bfb2b81e0a30b034b6d7586ce7e05de34c3fd
+        name: post-delete-hook
+      restartPolicy: OnFailure
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nanobe
+  name: vector-egress
+  namespace: kerno
+spec:
+  ports:
+  - name: http
+    port: 6000
+    protocol: TCP
+  selector:
+    app.kubernetes.io/instance: nanobe
+    app.kubernetes.io/name: nanobe
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app.kubernetes.io/app: nanobe
+    app.kubernetes.io/component: vector-agent
+    app.kubernetes.io/part-of: nanobe
+  name: vector-agent
+  namespace: kerno
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/app: nanobe
+      app.kubernetes.io/component: vector-agent
+      app.kubernetes.io/part-of: nanobe
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/app: nanobe
+        app.kubernetes.io/component: vector-agent
+        app.kubernetes.io/part-of: nanobe
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: eks.amazonaws.com/compute-type
+                operator: NotIn
+                values:
+                - fargate
+      containers:
+      - args:
+        - --config-dir
+        - "/etc/vector/kerno/{{ .Values.cloud | default "ephemeral" | lower }}"
+        - --config-dir
+        - /var/run/secrets/kubernetes.io/serviceaccount
+        - -t
+        - "2"
+        env:
+        - name: VECTOR_LOG
+          value: info
+        - name: BUCKET_NAME
+          value: {{ .Values.bucketName | default "kerno-samples-" }}
+        - name: VECTOR_SELF_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: VECTOR_SELF_POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: VECTOR_SELF_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: PROCFS_ROOT
+          value: /host/proc
+        - name: SYSFS_ROOT
+          value: /host/sys
+        - name: NANOBE_STACK_TRACE_AGGREGATION_ENABLED
+          value: "true"
+        image: public.ecr.aws/fyck.io/vector-agent@sha256:1a2af73dd129de772b28ec755c26414452d1497b775ea3bbddb84340162bdd3c
+        imagePullPolicy: Always
+        name: vector
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 64Mi
+        volumeMounts:
+        - mountPath: /vector-data-dir
+          name: data
+        - mountPath: /var/log
+          name: var-log
+          readOnly: true
+        - mountPath: /var/lib/
+          name: var-lib
+          readOnly: true
+        - mountPath: /host/proc
+          name: procfs
+          readOnly: true
+        - mountPath: /host/sys
+          name: sysfs
+          readOnly: true
+      nodeSelector:
+        kubernetes.io/os: linux
+        {{- if eq (lower (default "" .Values.cloud)) "gcp" }}
+        iam.gke.io/gke-metadata-server-enabled: "true"
+        {{- end }}
+      serviceAccountName: kerno-sa
+      terminationGracePeriodSeconds: 60
+      tolerations:
+      - operator: Exists
+      volumes:
+      - hostPath:
+          path: /var/lib/vector
+          type: ""
+        name: data
+      - hostPath:
+          path: /var/log
+          type: ""
+        name: var-log
+      - hostPath:
+          path: /var/lib/
+          type: ""
+        name: var-lib
+      - hostPath:
+          path: /proc
+          type: ""
+        name: procfs
+      - hostPath:
+          path: /sys
+          type: ""
+        name: sysfs
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 100%
+    type: RollingUpdate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nanobe
+  name: nanobe
+  namespace: kerno
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app.kubernetes.io/instance: nanobe
+    app.kubernetes.io/name: nanobe
+  type: ClusterIP
